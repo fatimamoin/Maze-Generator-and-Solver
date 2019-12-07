@@ -1,0 +1,172 @@
+﻿<!DOCTYPE html>
+
+<html>
+<head>
+
+	<script lang="javascript">
+
+
+		var cellStates = Object.freeze({ hurdle: 1, blank: 2, backtrack: 3, north: 4, south: 5, east: 6, west: 7, start: 8, finish: 9 });
+
+		var stateText = {
+			[cellStates.hurdle]: "", [cellStates.start]: "S", [cellStates.finish]: "F",
+			[cellStates.blank]: "", [cellStates.backtrack]: "B", [cellStates.north]: "↑", [cellStates.south]: "↓",
+			[cellStates.east]: "→", [cellStates.west]: "←"
+		};
+
+		function setCell(row, col, cellState) {
+			var x = col * 20;
+			var y = row * 20 ;
+			var cv = document.getElementById('cv');
+			var ctx = cv.getContext('2d');
+
+			ctx.fillStyle = "black";
+			ctx.strokeRect(x, y, 20, 20);
+			x++;
+			y++;
+			ctx.fillStyle = (cellState == cellStates.hurdle ? "black" : `rgba(0,0,0,0)`);
+			ctx.fillRect(x, y, 18, 18);
+			if (cellState != cellStates.hurdle) {
+				ctx.clearRect(x, y, 18, 18);
+				ctx.font = "bold 15px Arial";
+				ctx.fillStyle = "#f51400";
+				ctx.fillText(stateText[cellState], x + 3, y + 14);
+			}
+		}
+		var states;
+
+		function generateMaze(size) {
+
+			body = document.body.style.backgroundImage = "url('la1.png')";
+			
+			states = new Array(size);
+			for (rowIndex = 0; rowIndex < size; ++rowIndex) {
+				states[rowIndex] = new Array(size);
+
+				for (colIndex = 0; colIndex < size; ++colIndex) {
+					var rd = Math.floor(Math.random() * 5);
+					states[rowIndex][colIndex] = (rowIndex + colIndex == 0 ? cellStates.start :
+						(rowIndex == size - 1 && colIndex == size - 1 ? cellStates.finish :
+							(rd == 0 ? cellStates.hurdle : cellStates.blank)));
+					setCell(rowIndex, colIndex, states[rowIndex][colIndex]);
+				}
+			}
+		}
+		//The function search(haystack, needle) was taken from the internet as a prototype for .includes built in function. 
+		//This function works for nested arrays as opposed to includes() which is limted to 1D arrays
+		function search(haystack, needle) {
+			var i, j, current;
+			for (i = 0; i < haystack.length; ++i) {
+				if (needle.length === haystack[i].length) {
+					current = haystack[i];
+					for (j = 0; j < needle.length && needle[j] === current[j]; ++j);
+					if (j === needle.length)
+						return i;
+				}
+			}
+			return -1;
+		}
+
+		function solveMaze(i, j) {
+
+			path = [[0, 0]];
+			values = [4, 5, 6, 7, 1, 3];
+			win = false;
+			interval = setInterval(function () {
+
+				if (win) {
+					clearInterval(interval);
+					alert("Solution found!");
+				}
+				else if (j + 1 < 20 && states[i][j + 1] != 8 && !values.includes(states[i][j + 1]) && search(path, [i, j + 1]) == -1) {
+					j = j + 1;
+					if (states[i][j] == 9) {
+						x = path[path.length - 1];
+						states[x[0]][x[1]] = cellStates.east;
+						setCell(x[0], x[1], states[x[0]][x[1]]);
+						win = true;
+					}
+					else if (path.length > 0) {
+						x = path[path.length - 1];						
+						states[x[0]][x[1]] = cellStates.east;
+						setCell(x[0], x[1], states[x[0]][x[1]]);
+					}
+					path.push([i, j,]);
+				}
+				else if (i + 1 < 20 && states[i + 1][j] != 8 && !values.includes(states[i + 1][j]) && search(path, [i + 1, j]) == -1) {
+					i = i + 1;
+					if (states[i][j] == 9) {
+						x = path[path.length - 1];
+						states[x[0]][x[1]] = cellStates.south;
+						setCell(x[0], x[1], states[x[0]][x[1]]);
+						win = true;
+					}
+					else if (path.length > 0) {
+						x = path[path.length - 1];
+						states[x[0]][x[1]] = cellStates.south;
+						setCell(x[0], x[1], states[x[0]][x[1]]);
+					}
+					path.push([i, j]);
+				}
+				else if (j - 1 >= 0 && states[i][j - 1] != 8 && !values.includes(states[i][j - 1]) && search(path, [i, j - 1]) == -1) {
+					j = j - 1;
+					if (states[i][j] == 9) {
+						x = path[path.length - 1];
+						states[x[0]][x[1]] = cellStates.west;
+						setCell(x[0], x[1], states[x[0]][x[1]]);
+						win = true;
+					}
+					else if (path.length > 0) {
+						x = path[path.length - 1];
+						states[x[0]][x[1]] = cellStates.west;
+						setCell(x[0], x[1], states[x[0]][x[1]]);
+					}
+					path.push([i, j]);
+				}
+				else if ((i - 1 >= 0) && (states[i - 1][j] != 8) && !values.includes(states[i - 1][j]) && search(path, [i - 1, j]) == -1) {
+					i = i - 1;
+					if (states[i][j] == 9) {
+						x = path[path.length - 1];
+						states[x[0]][x[1]] = cellStates.north;
+						setCell(x[0], x[1], states[x[0]][x[1]]);
+						win = true;
+					}
+					else if (path.length > 0) {
+						x = path[path.length - 1];
+						states[x[0]][x[1]] = cellStates.north;
+						setCell(x[0], x[1], states[x[0]][x[1]]);
+					}
+					path.push([i, j]);
+				}
+				else {
+					if (path.length - 1 == 0) {			
+						alert("Solution not found");
+						clearInterval(interval);
+						return;
+					}
+					else {
+						x = path.pop();
+						states[x[0]][x[1]] = cellStates.backtrack;
+						setCell(x[0], x[1], states[x[0]][x[1]]);
+						y = path[path.length - 1];
+						i = y[0];
+						j = y[1];
+					}
+
+				}
+			}, 100);
+
+
+
+			return;
+		}
+	</script>
+</head>
+<body onload="generateMaze(20);">
+	<p style="color:red; font-size: 250%;font-family:'Script MT';">
+		Maze Generator &amp; Solver
+	</p>
+	<canvas id="cv" width="400" height="400" position="absolute" padding="60px"></canvas>
+	<input type="button" value="Solve it!" onclick="solveMaze(0,0);" />
+</body>
+</html>
